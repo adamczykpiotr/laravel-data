@@ -17,6 +17,7 @@ use Spatie\LaravelData\CursorPaginatedDataCollection;
 use Spatie\LaravelData\DataCollection;
 use Spatie\LaravelData\PaginatedDataCollection;
 use Spatie\LaravelData\Support\DataContainer;
+use Spatie\LaravelData\Support\Validation\ValidationUserContext;
 
 /**
  * @template TData of BaseData
@@ -36,6 +37,7 @@ class CreationContext
         public readonly bool $disableMagicalCreation,
         public readonly ?array $ignoredMagicalMethods,
         public readonly ?GlobalCastsCollection $casts,
+        public readonly ?ValidationUserContext $userContext,
     ) {
     }
 

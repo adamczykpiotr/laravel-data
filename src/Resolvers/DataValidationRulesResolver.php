@@ -16,6 +16,7 @@ use Spatie\LaravelData\Support\Validation\RuleDenormalizer;
 use Spatie\LaravelData\Support\Validation\RuleNormalizer;
 use Spatie\LaravelData\Support\Validation\ValidationContext;
 use Spatie\LaravelData\Support\Validation\ValidationPath;
+use Spatie\LaravelData\Support\Validation\ValidationUserContext;
 
 class DataValidationRulesResolver
 {
@@ -30,7 +31,8 @@ class DataValidationRulesResolver
         string $class,
         array $fullPayload,
         ValidationPath $path,
-        DataRules $dataRules
+        DataRules $dataRules,
+        ?ValidationUserContext $userContext,
     ): array {
         $dataClass = $this->dataConfig->getDataClass($class);
 
@@ -51,17 +53,20 @@ class DataValidationRulesResolver
                     $fullPayload,
                     $path,
                     $propertyPath,
-                    $dataRules
+                    $dataRules,
+                    $userContext,
                 );
 
                 continue;
             }
 
+            // HERE
             $rules = $this->inferRulesForDataProperty(
                 $dataProperty,
                 PropertyRules::create(),
                 $fullPayload,
                 $path,
+                $userContext,
             );
 
             $dataRules->add($propertyPath, $rules);
@@ -72,7 +77,8 @@ class DataValidationRulesResolver
             $fullPayload,
             $path,
             $dataRules,
-            $withoutValidationProperties
+            $withoutValidationProperties,
+            $userContext,
         );
 
         return $dataRules->rules;
@@ -100,6 +106,7 @@ class DataValidationRulesResolver
         ValidationPath $path,
         ValidationPath $propertyPath,
         DataRules $dataRules,
+        ?ValidationUserContext $userContext,
     ): void {
         $isOptionalAndEmpty = $dataProperty->type->isOptional && Arr::has($fullPayload, $propertyPath->get()) === false;
         $isNullableAndEmpty = $dataProperty->type->isNullable && Arr::get($fullPayload, $propertyPath->get()) === null;
@@ -122,7 +129,8 @@ class DataValidationRulesResolver
                 $fullPayload,
                 $path,
                 $propertyPath,
-                $dataRules
+                $dataRules,
+                $userContext,
             );
 
             return;
@@ -134,7 +142,8 @@ class DataValidationRulesResolver
                 $fullPayload,
                 $path,
                 $propertyPath,
-                $dataRules
+                $dataRules,
+                $userContext
             );
         }
     }
@@ -145,6 +154,7 @@ class DataValidationRulesResolver
         ValidationPath $path,
         ValidationPath $propertyPath,
         DataRules $dataRules,
+        ?ValidationUserContext $userContext,
     ): void {
         $this->resolveToplevelRules(
             $dataProperty,
@@ -159,6 +169,7 @@ class DataValidationRulesResolver
             $fullPayload,
             $propertyPath,
             $dataRules,
+            $userContext,
         );
     }
 
@@ -168,6 +179,7 @@ class DataValidationRulesResolver
         ValidationPath $path,
         ValidationPath $propertyPath,
         DataRules $dataRules,
+        ?ValidationUserContext $userContext,
     ): void {
         $this->resolveToplevelRules(
             $dataProperty,
@@ -178,7 +190,7 @@ class DataValidationRulesResolver
             shouldBePresent: true
         );
 
-        $dataRules->addCollection($propertyPath, Rule::forEach(function (mixed $value, mixed $attribute) use ($fullPayload, $dataProperty) {
+        $dataRules->addCollection($propertyPath, Rule::forEach(function (mixed $value, mixed $attribute) use ($fullPayload, $dataProperty, $userContext) {
             if (! is_array($value)) {
                 return ['array'];
             }
@@ -187,7 +199,8 @@ class DataValidationRulesResolver
                 $dataProperty->type->dataClass,
                 $fullPayload,
                 ValidationPath::create($attribute),
-                DataRules::create()
+                DataRules::create(),
+                $userContext
             );
 
             return collect($rules)->keyBy(
@@ -202,6 +215,7 @@ class DataValidationRulesResolver
         ValidationPath $path,
         ValidationPath $propertyPath,
         DataRules $dataRules,
+        ?ValidationUserContext $userContext = null,
         bool $shouldBePresent = false
     ): void {
         $rules = [];
@@ -212,11 +226,13 @@ class DataValidationRulesResolver
 
         $rules[] = ArrayType::create();
 
+        // HERE
         $toplevelRules = $this->inferRulesForDataProperty(
             $dataProperty,
             PropertyRules::create(...$rules),
             $fullPayload,
             $path,
+            $userContext
         );
 
         $dataRules->add($propertyPath, $toplevelRules);
@@ -228,7 +244,8 @@ class DataValidationRulesResolver
         array $fullPayload,
         ValidationPath $path,
         DataRules $dataRules,
-        array $withoutValidationProperties
+        array $withoutValidationProperties,
+        ?ValidationUserContext $userContext,
     ): void {
         if (! method_exists($class->name, 'rules')) {
             return;
@@ -237,7 +254,8 @@ class DataValidationRulesResolver
         $validationContext = new ValidationContext(
             $path->isRoot() ? $fullPayload : Arr::get($fullPayload, $path->get(), []),
             $fullPayload,
-            $path
+            $path,
+            $userContext,
         );
 
         $overwrittenRules = app()->call([$class->name, 'rules'], ['context' => $validationContext]);
@@ -262,11 +280,15 @@ class DataValidationRulesResolver
         PropertyRules $rules,
         array $fullPayload,
         ValidationPath $path,
+        ?ValidationUserContext $userContext,
     ): array {
+
+        // HERE
         $context = new ValidationContext(
             $path->isRoot() ? $fullPayload : Arr::get($fullPayload, $path->get(), null),
             $fullPayload,
-            $path
+            $path,
+            $userContext,
         );
 
         foreach ($this->dataConfig->ruleInferrers as $inferrer) {

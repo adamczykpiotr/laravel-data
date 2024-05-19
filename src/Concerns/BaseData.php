@@ -23,6 +23,7 @@ use Spatie\LaravelData\Support\Creation\CreationContext;
 use Spatie\LaravelData\Support\Creation\CreationContextFactory;
 use Spatie\LaravelData\Support\DataConfig;
 use Spatie\LaravelData\Support\DataProperty;
+use Spatie\LaravelData\Support\Validation\ValidationUserContext;
 
 trait BaseData
 {
@@ -46,18 +47,23 @@ trait BaseData
         return static::factory()->from(...$payloads);
     }
 
+    public static function fromUsingContext(ValidationUserContext $context, mixed ...$payloads)
+    {
+        return static::factory(userContext: $context)->from(...$payloads);
+    }
+
     public static function collect(mixed $items, ?string $into = null): array|DataCollection|PaginatedDataCollection|CursorPaginatedDataCollection|Enumerable|AbstractPaginator|PaginatorContract|AbstractCursorPaginator|CursorPaginatorContract|LazyCollection|Collection
     {
         return static::factory()->collect($items, $into);
     }
 
-    public static function factory(?CreationContext $creationContext = null): CreationContextFactory
+    public static function factory(?CreationContext $creationContext = null, ?ValidationUserContext $userContext = null): CreationContextFactory
     {
         if ($creationContext) {
-            return CreationContextFactory::createFromCreationContext(static::class, $creationContext);
+            return CreationContextFactory::createFromCreationContext(static::class, $creationContext, $userContext);
         }
 
-        return CreationContextFactory::createFromConfig(static::class);
+        return CreationContextFactory::createFromConfig(static::class, null, $userContext);
     }
 
     public static function normalizers(): array

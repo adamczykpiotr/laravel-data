@@ -9,6 +9,7 @@ use Spatie\LaravelData\Contracts\BaseData;
 use Spatie\LaravelData\Contracts\ValidateableData;
 use Spatie\LaravelData\Support\Validation\DataRules;
 use Spatie\LaravelData\Support\Validation\ValidationPath;
+use Spatie\LaravelData\Support\Validation\ValidationUserContext;
 
 class DataValidatorResolver
 {
@@ -22,6 +23,7 @@ class DataValidatorResolver
     public function execute(
         string $dataClass,
         Arrayable|array $payload,
+        ?ValidationUserContext $userContext
     ): Validator {
         $payload = $payload instanceof Arrayable ? $payload->toArray() : $payload;
 
@@ -29,7 +31,8 @@ class DataValidatorResolver
             $dataClass,
             $payload,
             ValidationPath::create(),
-            DataRules::create()
+            DataRules::create(),
+            $userContext,
         );
 
         ['messages' => $messages, 'attributes' => $attributes] = $this->dataValidationMessagesAndAttributesResolver->execute(

@@ -9,6 +9,7 @@ use Spatie\LaravelData\Support\DataContainer;
 use Spatie\LaravelData\Support\Validation\DataRules;
 use Spatie\LaravelData\Support\Validation\ValidationContext;
 use Spatie\LaravelData\Support\Validation\ValidationPath;
+use Spatie\LaravelData\Support\Validation\ValidationUserContext;
 
 /**
  * @method static array rules(ValidationContext $context)
@@ -21,11 +22,12 @@ use Spatie\LaravelData\Support\Validation\ValidationPath;
  */
 trait ValidateableData
 {
-    public static function validate(Arrayable|array $payload): Arrayable|array
+    public static function validate(Arrayable|array $payload, ?ValidationUserContext $userContext = null): Arrayable|array
     {
         $validator = DataContainer::get()->dataValidatorResolver()->execute(
             static::class,
             $payload,
+            $userContext,
         );
 
         return DataContainer::get()->validatedPayloadResolver()->execute(

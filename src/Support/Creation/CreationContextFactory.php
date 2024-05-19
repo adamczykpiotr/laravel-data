@@ -17,6 +17,7 @@ use Spatie\LaravelData\CursorPaginatedDataCollection;
 use Spatie\LaravelData\DataCollection;
 use Spatie\LaravelData\PaginatedDataCollection;
 use Spatie\LaravelData\Support\DataContainer;
+use Spatie\LaravelData\Support\Validation\ValidationUserContext;
 
 /**
  * @template TData
@@ -24,7 +25,7 @@ use Spatie\LaravelData\Support\DataContainer;
 class CreationContextFactory
 {
     /**
-     * @param class-string<TData> $dataClass
+     * @param  class-string<TData>      $dataClass
      */
     public function __construct(
         public string $dataClass,
@@ -33,28 +34,34 @@ class CreationContextFactory
         public bool $disableMagicalCreation,
         public ?array $ignoredMagicalMethods,
         public ?GlobalCastsCollection $casts,
+        public ?ValidationUserContext $userContext,
     ) {
     }
 
     public static function createFromConfig(
         string $dataClass,
-        ?array $config = null
+        ?array $config = null,
+        ?ValidationUserContext $userContext = null,
     ): self {
         $config ??= config('data');
 
         return new self(
             dataClass: $dataClass,
-            validationStrategy: ValidationStrategy::from($config['validation_strategy']),
+            validationStrategy: ValidationStrategy::from(
+                $config['validation_strategy']
+            ),
             mapPropertyNames: true,
             disableMagicalCreation: false,
             ignoredMagicalMethods: null,
             casts: null,
+            userContext: $userContext,
         );
     }
 
     public static function createFromCreationContext(
         string $dataClass,
         CreationContext $creationContext,
+        ?ValidationUserContext $userContext = null,
     ): self {
         return new self(
             dataClass: $dataClass,
@@ -63,11 +70,12 @@ class CreationContextFactory
             disableMagicalCreation: $creationContext->disableMagicalCreation,
             ignoredMagicalMethods: $creationContext->ignoredMagicalMethods,
             casts: $creationContext->casts,
+            userContext: $userContext
         );
     }
 
-    public function validationStrategy(ValidationStrategy $validationStrategy): self
-    {
+    public function validationStrategy(ValidationStrategy $validationStrategy
+    ): self {
         $this->validationStrategy = $validationStrategy;
 
         return $this;
@@ -94,22 +102,23 @@ class CreationContextFactory
         return $this;
     }
 
-    public function withPropertyNameMapping(bool $withPropertyNameMapping = true): self
-    {
+    public function withPropertyNameMapping(bool $withPropertyNameMapping = true
+    ): self {
         $this->mapPropertyNames = $withPropertyNameMapping;
 
         return $this;
     }
 
-    public function withoutPropertyNameMapping(bool $withoutPropertyNameMapping = true): self
-    {
-        $this->mapPropertyNames = ! $withoutPropertyNameMapping;
+    public function withoutPropertyNameMapping(
+        bool $withoutPropertyNameMapping = true
+    ): self {
+        $this->mapPropertyNames = !$withoutPropertyNameMapping;
 
         return $this;
     }
 
-    public function withoutMagicalCreation(bool $withoutMagicalCreation = true): self
-    {
+    public function withoutMagicalCreation(bool $withoutMagicalCreation = true
+    ): self {
         $this->disableMagicalCreation = $withoutMagicalCreation;
 
         return $this;
@@ -117,7 +126,7 @@ class CreationContextFactory
 
     public function withMagicalCreation(bool $withMagicalCreation = true): self
     {
-        $this->disableMagicalCreation = ! $withMagicalCreation;
+        $this->disableMagicalCreation = !$withMagicalCreation;
 
         return $this;
     }
@@ -132,8 +141,8 @@ class CreationContextFactory
     }
 
     /**
-     * @param string $castable
-     * @param Cast|class-string<Cast> $cast
+     * @param  string                   $castable
+     * @param  Cast|class-string<Cast>  $cast
      */
     public function withCast(
         string $castable,
@@ -175,6 +184,7 @@ class CreationContextFactory
             disableMagicalCreation: $this->disableMagicalCreation,
             ignoredMagicalMethods: $this->ignoredMagicalMethods,
             casts: $this->casts,
+            userContext: $this->userContext
         );
     }
 
@@ -194,7 +204,7 @@ class CreationContextFactory
      * @template TCollectKey of array-key
      * @template TCollectValue
      *
-     * @param Collection<TCollectKey, TCollectValue>|EloquentCollection<TCollectKey, TCollectValue>|LazyCollection<TCollectKey, TCollectValue>|Enumerable|array<TCollectKey, TCollectValue>|AbstractPaginator|PaginatorContract|AbstractCursorPaginator|CursorPaginatorContract|DataCollection<TCollectKey, TCollectValue> $items
+     * @param  Collection<TCollectKey, TCollectValue>|EloquentCollection<TCollectKey, TCollectValue>|LazyCollection<TCollectKey, TCollectValue>|Enumerable|array<TCollectKey, TCollectValue>|AbstractPaginator|PaginatorContract|AbstractCursorPaginator|CursorPaginatorContract|DataCollection<TCollectKey, TCollectValue>  $items
      *
      * @return ($into is 'array' ? array<TCollectKey, TData> : ($into is class-string<EloquentCollection> ? Collection<TCollectKey, TData> : ($into is class-string<Collection> ? Collection<TCollectKey, TData> : ($into is class-string<LazyCollection> ? LazyCollection<TCollectKey, TData> : ($into is class-string<DataCollection> ? DataCollection<TCollectKey, TData> : ($into is class-string<PaginatedDataCollection> ? PaginatedDataCollection<TCollectKey, TData> : ($into is class-string<CursorPaginatedDataCollection> ? CursorPaginatedDataCollection<TCollectKey, TData> : ($items is EloquentCollection ? Collection<TCollectKey, TData> : ($items is Collection ? Collection<TCollectKey, TData> : ($items is LazyCollection ? LazyCollection<TCollectKey, TData> : ($items is Enumerable ? Enumerable<TCollectKey, TData> : ($items is array ? array<TCollectKey, TData> : ($items is AbstractPaginator ? AbstractPaginator : ($items is PaginatorContract ? PaginatorContract : ($items is AbstractCursorPaginator ? AbstractCursorPaginator : ($items is CursorPaginatorContract ? CursorPaginatorContract : ($items is DataCollection ? DataCollection<TCollectKey, TData> : ($items is CursorPaginator ? CursorPaginatedDataCollection<TCollectKey, TData> : ($items is Paginator ? PaginatedDataCollection<TCollectKey, TData> : DataCollection<TCollectKey, TData>)))))))))))))))))))
      */
@@ -202,11 +212,12 @@ class CreationContextFactory
         mixed $items,
         ?string $into = null
     ): array|DataCollection|PaginatedDataCollection|CursorPaginatedDataCollection|Enumerable|AbstractPaginator|PaginatorContract|AbstractCursorPaginator|CursorPaginatorContract|LazyCollection|Collection {
-        return DataContainer::get()->dataCollectableFromSomethingResolver()->execute(
-            $this->dataClass,
-            $this->get(),
-            $items,
-            $into
-        );
+        return DataContainer::get()->dataCollectableFromSomethingResolver()
+            ->execute(
+                $this->dataClass,
+                $this->get(),
+                $items,
+                $into
+            );
     }
 }

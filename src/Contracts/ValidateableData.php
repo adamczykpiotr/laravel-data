@@ -4,10 +4,11 @@ namespace Spatie\LaravelData\Contracts;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Validation\Validator;
+use Spatie\LaravelData\Support\Validation\ValidationUserContext;
 
 interface ValidateableData
 {
-    public static function validate(Arrayable|array $payload): Arrayable|array;
+    public static function validate(Arrayable|array $payload, ?ValidationUserContext $userContext = null): Arrayable|array;
 
     /**
      * @return static
